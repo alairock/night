@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "138719973250",
+    "firebase_url": "https://codafire-5ec47-default-rtdb.firebaseio.com",
+    "project_id": "codafire-5ec47",
+    "storage_bucket": "codafire-5ec47.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:138719973250:android:127ff165a817f1544d099b",
+        "android_client_info": {
+          "package_name": "com.example.mob"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "138719973250-14o1da705bc6icun4momsqahv2nfvm9p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzpQhSjpewGXWFUf4EW7mN29iumZIFnd0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138719973250-14o1da705bc6icun4momsqahv2nfvm9p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "138719973250-2ep3q2l253ktv0ndmmmn8cdrmo653v2a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mob.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
