@@ -5,32 +5,26 @@ import "package:mob/models/user.dart";
 import "package:mob/utils/lobby.dart";
 
 class HostUser {
-  late Peer peer; // Peer instance representing the host
-  late List<User> connectedUsers; // List of connected users
-  String gameCode;
-  StreamController<List<User>> controller;
-  List<StreamSubscription> subscriptions = [];
-  late List<DataConnection> connections; // List of peer connections
+  late Peer peer;
+  late List<User> connectedUsers = [];
+  final String gameCode;
+  final StreamController<List<User>> controller;
+  final List<StreamSubscription> subscriptions = [];
+  late List<DataConnection> connections = [];
 
   HostUser(String name, this.gameCode, this.controller) {
+    initializeHostUser(name);
+  }
+
+  void initializeHostUser(String name) {
     var hostId = "mob182388inu-$gameCode";
     peer = Peer(id: hostId);
-    connectedUsers = [User(hostId, name, DateTime.now().toString(), true)];
-    connections = [];
+    connectedUsers.add(User(hostId, name, DateTime.now().toString(), true));
+    setUpEventListeners();
+    setUpPeriodicTasks();
+  }
 
-    // every 5 seconds, send the lobby list to all connected users
-    Timer.periodic(const Duration(seconds: 5), (timer) {
-      // check each user's last seen time, remove them if they are inactive for 10 seconds
-      var now = DateTime.now();
-      connectedUsers.removeWhere((user) {
-        var lastSeen = DateTime.parse(user.lastSeen);
-        if (user.isHost) return false; // Don't remove the host
-        return now.difference(lastSeen).inSeconds > 5;
-      });
-      controller.add(List.from(connectedUsers));
-      sendLobbyList();
-    });
-
+  void setUpEventListeners() {
     subscriptions.add(peer.on('open').listen((_) {
       print('Open: We are the host');
       controller.add(List.from(connectedUsers));
@@ -42,9 +36,6 @@ class HostUser {
       peerConn.on('data').listen((data) {
         var rawData = jsonDecode(data);
         var user = User.fromJson(rawData['data']);
-        // check if the last seen time is more than 5 seconds ago
-        // and remove the user if it is in the list.
-        var now = DateTime.now();
         var index = connectedUsers.indexWhere((u) => u.name == user.name);
 
         if (index >= 0) {
@@ -52,12 +43,7 @@ class HostUser {
         } else {
           connectedUsers.add(user);
         }
-        connectedUsers.removeWhere((user) {
-          var lastSeen = DateTime.parse(user.lastSeen);
-          if (user.isHost) return false; // Don't remove the host
-          return now.difference(lastSeen).inSeconds > 5;
-        });
-        controller.add(List.from(connectedUsers));
+        removeInactiveUsers();
         controller.add(List.from(connectedUsers));
         sendLobbyList();
       });
@@ -70,7 +56,23 @@ class HostUser {
     }));
   }
 
-  // Method to send lobby list
+  void setUpPeriodicTasks() {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      removeInactiveUsers();
+      controller.add(List.from(connectedUsers));
+      sendLobbyList();
+    });
+  }
+
+  void removeInactiveUsers() {
+    var now = DateTime.now();
+    connectedUsers.removeWhere((user) {
+      var lastSeen = DateTime.parse(user.lastSeen);
+      if (user.isHost) return false;
+      return now.difference(lastSeen).inSeconds > 5;
+    });
+  }
+
   void sendLobbyList() {
     var payload = {
       "event": "lobby-list",
@@ -102,17 +104,16 @@ class HostUser {
     peer.dispose();
     for (var connection in connections) {
       connection.close();
-      // arst
     }
   }
 }
 
 class NormalUser {
-  late Peer? peer; // Peer instance representing the normal user
+  late Peer? peer;
   late String gameCode, name, hostId;
-  late List<User> connectedUsers;
-  StreamController<List<User>> controller;
-  List<StreamSubscription> subscriptions = [];
+  late List<User> connectedUsers = [];
+  final StreamController<List<User>> controller;
+  final List<StreamSubscription> subscriptions = [];
   late Function hostDisconnectedCallback;
   bool isAdding = false;
 
@@ -120,11 +121,18 @@ class NormalUser {
 
   NormalUser(this.name, this.gameCode, this.controller,
       this.hostDisconnectedCallback) {
+    initializeNormalUser();
+  }
+
+  void initializeNormalUser() {
     hostId = "mob182388inu-$gameCode";
     var peerId = "$hostId-${generateRandomCode(5)}";
     peer = Peer(id: peerId);
-    connectedUsers = [];
+    setUpEventListeners();
+    setUpConnectionCheck();
+  }
 
+  void setUpEventListeners() {
     subscriptions.add(peer!.on('open').listen((_) {
       print('Open: We are not the host');
       hostConn = peer?.connect(hostId);
@@ -132,7 +140,6 @@ class NormalUser {
         print('Open: Host connection established');
 
         sendUserJoinEvent();
-        // now send keep alive messages every 5 seconds
         Timer.periodic(const Duration(seconds: 5), (timer) {
           if (hostConn?.open == false) {
             timer.cancel();
@@ -142,17 +149,9 @@ class NormalUser {
         });
       });
 
-      // if the host does not respond within 10 seconds, disconnect
-      Timer(Duration(seconds: 1), () {
-        if (hostConn?.open == false) {
-          print('Close: Host did not respond');
-          hostDisconnectedCallback(); // Call the callback function
-        }
-      });
-
       hostConn?.on('close').listen((_) {
         print('Close: Host has left the game');
-        hostDisconnectedCallback(); // Call the callback function
+        hostDisconnectedCallback();
       });
 
       hostConn?.on('data').listen((data) {
@@ -170,7 +169,15 @@ class NormalUser {
     }));
   }
 
-  // Method to send user join event, optional parameter for timestamp
+  void setUpConnectionCheck() {
+    Timer(Duration(seconds: 1), () {
+      if (hostConn?.open == false) {
+        print('Close: Host did not respond');
+        hostDisconnectedCallback();
+      }
+    });
+  }
+
   void sendUserJoinEvent([String? timestamp]) {
     var payload = {
       "event": "user-join",
@@ -189,16 +196,14 @@ class NormalUser {
   }
 
   void dispose() {
-    // timestamp from 10 seconds ago to indicate that the user has left
-    print("disposinig");
+    print("disposing");
     var timestamp =
         DateTime.now().subtract(const Duration(seconds: 30)).toString();
     sendUserJoinEvent(timestamp);
     for (var subscription in subscriptions) {
       subscription.cancel();
     }
-    if (!isAdding) {
-      peer?.dispose();
-    }
+    hostConn?.close();
+    peer?.dispose();
   }
 }
