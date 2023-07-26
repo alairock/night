@@ -71,6 +71,10 @@ class HostUser {
       if (user.isHost) return false;
       return now.difference(lastSeen).inSeconds > 5;
     });
+
+    if (!controller.isClosed) {
+      controller.add(List.from(connectedUsers));
+    }
   }
 
   void sendLobbyList() {
@@ -162,7 +166,9 @@ class NormalUser {
           connectedUsers.clear();
           connectedUsers.addAll(users);
           isAdding = true;
-          controller.add(List.from(connectedUsers));
+          if (!controller.isClosed) {
+            controller.add(List.from(connectedUsers));
+          }
           isAdding = false;
         }
       });
@@ -191,12 +197,10 @@ class NormalUser {
 
   void sendHostMessage(Map<String, dynamic> payload) {
     if (hostConn?.open == false) return;
-    print("sending message to host $payload");
     hostConn?.send(jsonEncode(payload));
   }
 
   void dispose() {
-    print("disposing");
     var timestamp =
         DateTime.now().subtract(const Duration(seconds: 30)).toString();
     sendUserJoinEvent(timestamp);
