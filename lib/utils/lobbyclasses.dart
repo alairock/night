@@ -11,6 +11,7 @@ class HostUser {
   final StreamController<List<User>> controller;
   final List<StreamSubscription> subscriptions = [];
   late List<DataConnection> connections = [];
+  bool isAdding = false;
 
   HostUser(String name, this.gameCode, this.controller) {
     initializeHostUser(name);
@@ -27,7 +28,9 @@ class HostUser {
   void setUpEventListeners() {
     subscriptions.add(peer.on('open').listen((_) {
       print('Open: We are the host');
+      isAdding = true;
       controller.add(List.from(connectedUsers));
+      isAdding = false;
     }));
 
     subscriptions.add(peer.on<DataConnection>('connection').listen((peerConn) {
@@ -44,20 +47,28 @@ class HostUser {
           connectedUsers.add(user);
         }
         removeInactiveUsers();
+        isAdding = true;
         controller.add(List.from(connectedUsers));
+        isAdding = false;
         sendLobbyList();
       });
     }));
 
     subscriptions.add(peer.on<DataConnection>('disconnection').listen((data) {
       connectedUsers.remove(User(data.peer, '', '', false));
+      isAdding = true;
       controller.add(List.from(connectedUsers));
+      isAdding = false;
       connections.removeWhere((conn) => conn.peer == data.peer);
     }));
   }
 
   void setUpPeriodicTasks() {
     Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (controller.isClosed) {
+        timer.cancel();
+        return;
+      }
       removeInactiveUsers();
       controller.add(List.from(connectedUsers));
       sendLobbyList();
@@ -73,7 +84,9 @@ class HostUser {
     });
 
     if (!controller.isClosed) {
+      isAdding = true;
       controller.add(List.from(connectedUsers));
+      isAdding = false;
     }
   }
 
@@ -108,6 +121,9 @@ class HostUser {
     peer.dispose();
     for (var connection in connections) {
       connection.close();
+    }
+    if (!controller.isClosed) {
+      controller.close();
     }
   }
 }
@@ -209,5 +225,8 @@ class NormalUser {
     }
     hostConn?.close();
     peer?.dispose();
+    if (!controller.isClosed) {
+      controller.close();
+    }
   }
 }

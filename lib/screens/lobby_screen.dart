@@ -55,6 +55,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
 
     if (user is HostUser) {
+      HostUser hu = user as HostUser;
+      if (hu.isAdding) {
+        Timer(Duration(seconds: 1), () {
+          hu.dispose();
+        });
+      } else {
+        hu.dispose();
+      }
       (user as HostUser).dispose();
     } else {
       NormalUser nu = user as NormalUser;

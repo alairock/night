@@ -84,7 +84,9 @@ class NewGameScreenState extends State<NewGameScreen> {
                   : () async {
                       var navigator = Navigator.of(context);
                       String gameCode = generateRandomCode(5);
-                      gameCode = "arst";
+                      if (username == "arst") {
+                        gameCode = "arst";
+                      }
                       navigator.push(
                         MaterialPageRoute(
                           builder: (context) => LobbyScreen(
