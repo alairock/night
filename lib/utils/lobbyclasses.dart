@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:peerdart/peerdart.dart';
-import "package:mob/models/user.dart";
-import "package:mob/utils/lobby.dart";
+import "package:night/models/user.dart";
+import "package:night/utils/lobby.dart";
 
 class HostUser {
   late Peer peer;
@@ -18,7 +18,7 @@ class HostUser {
   }
 
   void initializeHostUser(String name) {
-    var hostId = "mob182388inu-$gameCode";
+    var hostId = "night182388inu-$gameCode";
     peer = Peer(id: hostId);
     connectedUsers.add(User(hostId, name, DateTime.now().toString(), true));
     setUpEventListeners();
@@ -145,7 +145,7 @@ class NormalUser {
   }
 
   void initializeNormalUser() {
-    hostId = "mob182388inu-$gameCode";
+    hostId = "night182388inu-$gameCode";
     var peerId = "$hostId-${generateRandomCode(5)}";
     peer = Peer(id: peerId);
     setUpEventListeners();

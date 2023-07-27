@@ -1,6 +1,6 @@
 {
-    "name": "mob",
-    "short_name": "mob",
+    "name": "night",
+    "short_name": "night",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

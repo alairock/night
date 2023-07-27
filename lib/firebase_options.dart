@@ -70,8 +70,9 @@ class DefaultFirebaseOptions {
     projectId: 'codafire-5ec47',
     databaseURL: 'https://codafire-5ec47-default-rtdb.firebaseio.com',
     storageBucket: 'codafire-5ec47.appspot.com',
-    iosClientId: '138719973250-quppg9unvbpbeokgfkbtm640t4u2mb13.apps.googleusercontent.com',
-    iosBundleId: 'com.example.mob',
+    iosClientId:
+        '138719973250-quppg9unvbpbeokgfkbtm640t4u2mb13.apps.googleusercontent.com',
+    iosBundleId: 'com.example.night',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -81,7 +82,8 @@ class DefaultFirebaseOptions {
     projectId: 'codafire-5ec47',
     databaseURL: 'https://codafire-5ec47-default-rtdb.firebaseio.com',
     storageBucket: 'codafire-5ec47.appspot.com',
-    iosClientId: '138719973250-2ep3q2l253ktv0ndmmmn8cdrmo653v2a.apps.googleusercontent.com',
-    iosBundleId: 'com.example.mob.RunnerTests',
+    iosClientId:
+        '138719973250-2ep3q2l253ktv0ndmmmn8cdrmo653v2a.apps.googleusercontent.com',
+    iosBundleId: 'com.example.night.RunnerTests',
   );
 }

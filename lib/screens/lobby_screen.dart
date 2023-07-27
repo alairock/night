@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mob/models/user.dart';
-import 'package:mob/utils/lobby.dart';
-import 'package:mob/utils/lobbyclasses.dart';
+import 'package:night/models/user.dart';
+import 'package:night/utils/lobby.dart';
+import 'package:night/utils/lobbyclasses.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class LobbyScreen extends StatefulWidget {

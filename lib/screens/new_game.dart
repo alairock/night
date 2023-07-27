@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mob/screens/lobby_screen.dart';
-import 'package:mob/utils/lobby.dart';
+import 'package:night/screens/lobby_screen.dart';
+import 'package:night/utils/lobby.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NewGameScreen extends StatefulWidget {

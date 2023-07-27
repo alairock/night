@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:138719973250:android:127ff165a817f1544d099b",
         "android_client_info": {
-          "package_name": "com.example.mob"
+          "package_name": "com.example.night"
         }
       },
       "oauth_client": [
@@ -35,7 +35,7 @@
               "client_id": "138719973250-2ep3q2l253ktv0ndmmmn8cdrmo653v2a.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.mob.RunnerTests"
+                "bundle_id": "com.example.night.RunnerTests"
               }
             }
           ]
