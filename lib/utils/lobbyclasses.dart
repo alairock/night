@@ -4,25 +4,62 @@ import 'package:peerdart/peerdart.dart';
 import "package:night/models/user.dart";
 import "package:night/utils/lobby.dart";
 
+import '../models/game.dart';
+
+void addTestUsers(List<User> users, StreamController<List<User>> controller) {
+  var timeForUsers = DateTime.now().toString();
+  var testUsers = [
+    User('1', 'User 1', timeForUsers, false),
+    User('2', 'User 2', timeForUsers, false),
+    User('3', 'User 3', timeForUsers, false),
+    User('4', 'User 4', timeForUsers, false),
+    User('5', 'User 5', timeForUsers, false),
+    User('6', 'User 6', timeForUsers, false),
+    User('7', 'User 7', timeForUsers, false),
+  ];
+
+  var now = DateTime.now().toString();
+  for (var testUser in testUsers) {
+    var index = users.indexWhere((u) => u.name == testUser.name);
+    if (index >= 0) {
+      users[index].lastSeen = now;
+    } else {
+      users.add(testUser);
+    }
+  }
+  if (!controller.isClosed) {
+    controller.add(List.from(users));
+  }
+}
+
 class HostUser {
   late Peer peer;
   late List<User> connectedUsers = [];
   final String gameCode;
+  late Game game;
   final StreamController<List<User>> controller;
   final List<StreamSubscription> subscriptions = [];
   late List<DataConnection> connections = [];
+  late Map<String, DataConnection> connectionMap = {};
+  late String hostId;
   bool isAdding = false;
 
-  HostUser(String name, this.gameCode, this.controller) {
+  HostUser(String name, this.gameCode, this.controller, this.game) {
     initializeHostUser(name);
   }
 
   void initializeHostUser(String name) {
-    var hostId = "night182388inu-$gameCode";
+    hostId = "night182388inu-$gameCode";
     peer = Peer(id: hostId);
     connectedUsers.add(User(hostId, name, DateTime.now().toString(), true));
     setUpEventListeners();
     setUpPeriodicTasks();
+
+    // Send the lobby list to the connected users
+    addTestUsers(connectedUsers, controller);
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      addTestUsers(connectedUsers, controller);
+    });
   }
 
   void setUpEventListeners() {
@@ -40,7 +77,7 @@ class HostUser {
         var rawData = jsonDecode(data);
         var user = User.fromJson(rawData['data']);
         var index = connectedUsers.indexWhere((u) => u.name == user.name);
-
+        connectionMap[user.id] = peerConn;
         if (index >= 0) {
           connectedUsers[index] = user;
         } else {
@@ -99,11 +136,26 @@ class HostUser {
   }
 
   void startGame() {
-    var payload = {
-      "event": "start-game",
-      "data": {"users": connectedUsers.map((u) => u.toJson()).toList()}
-    };
-    broadcastEvent(payload);
+    Map<String, GameState> userStates = game.nightPhase(connectedUsers);
+    userStates.forEach((key, value) {
+      // print("$key : ${value.toJson()}");
+      if (hostId == key) {
+        game.updateGameState(value);
+        return;
+      }
+      var payload = {
+        "event": "game-state",
+        "data": value.toJson(),
+      };
+      // check if connection is defined and open
+      if (connectionMap[key] == null || connectionMap[key]!.open == false) {
+        return;
+      }
+      connectionMap[key]!.send(jsonEncode(payload));
+    });
+
+    game.startGame();
+    sendLobbyList();
   }
 
   void broadcastEvent(Map<String, dynamic> event) {
@@ -135,12 +187,13 @@ class NormalUser {
   final StreamController<List<User>> controller;
   final List<StreamSubscription> subscriptions = [];
   late Function hostDisconnectedCallback;
+  late Game game;
   bool isAdding = false;
 
   DataConnection? hostConn;
 
   NormalUser(this.name, this.gameCode, this.controller,
-      this.hostDisconnectedCallback) {
+      this.hostDisconnectedCallback, this.game) {
     initializeNormalUser();
   }
 
@@ -187,12 +240,19 @@ class NormalUser {
           }
           isAdding = false;
         }
+
+        if (payload['event'] == 'start-game') {
+          game.startGame();
+        }
+        if (payload['event'] == 'game-state') {
+          game.updateGameState(payload['data']);
+        }
       });
     }));
   }
 
   void setUpConnectionCheck() {
-    Timer(Duration(seconds: 1), () {
+    Timer(const Duration(seconds: 1), () {
       if (hostConn?.open == false) {
         print('Close: Host did not respond');
         hostDisconnectedCallback();

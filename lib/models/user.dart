@@ -1,7 +1,7 @@
 class User {
   final String id;
   final String name;
-  final String lastSeen;
+  late String lastSeen;
   final bool isHost;
 
   User(this.id, this.name, this.lastSeen, this.isHost);
