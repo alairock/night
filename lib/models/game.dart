@@ -7,7 +7,12 @@ class GameState {
   late List otherFascists = [];
   late String hitlerId = "";
 
-  GameState();
+  GameState(
+    this.isHitler,
+    this.isFascist,
+    this.otherFascists,
+    this.hitlerId,
+  );
 
   Map<String, dynamic> toJson() => {
         'isHitler': isHitler,
@@ -15,6 +20,13 @@ class GameState {
         'otherFascists': otherFascists,
         'hitlerId': hitlerId,
       };
+
+  static GameState fromJson(Map<String, dynamic> json) => GameState(
+        json['isHitler'],
+        json['isFascist'],
+        json['otherFascists'],
+        json['hitlerId'],
+      );
 }
 
 class Game {
@@ -24,12 +36,14 @@ class Game {
   bool isStarted;
   late GameState gameState;
   Function? startGameCallback;
+  Function? endGameCallback;
   Function? updateStateCallback;
 
   Game({
     required this.id,
     required this.isStarted,
     this.startGameCallback,
+    this.endGameCallback,
     this.updateStateCallback,
   });
 
@@ -38,8 +52,14 @@ class Game {
     isStarted = true;
   }
 
-  void updateState(GameState gs) {
-    updateStateCallback!(gs);
+  void endGame() {
+    endGameCallback!();
+    isStarted = false;
+  }
+
+  void updateGameState(GameState gameState) {
+    updateStateCallback!(gameState);
+    this.gameState = gameState;
   }
 
   Map<String, GameState> nightPhase(List<User> users) {
@@ -51,7 +71,6 @@ class Game {
     // shuffle the list of users
     userIds.shuffle();
 
-    print("userIds: $userIds");
     // number of fascists for 7-10 players is num_of_players modulus 3
     int numFascists = 1;
     if (users.length >= 7 && users.length <= 10) {
@@ -61,7 +80,7 @@ class Game {
     // assign roles to each user
     List<String> fascistIds = [];
     for (var i = 0; i < users.length; i++) {
-      userStates[userIds[i]] = GameState();
+      userStates[userIds[i]] = GameState(false, false, [], "");
       if (i < numFascists) {
         userStates[userIds[i]]!.isFascist = true;
         fascistIds.add(userIds[i]);
@@ -80,9 +99,5 @@ class Game {
     }
 
     return userStates;
-  }
-
-  void updateGameState(dynamic gameState) {
-    this.gameState = gameState;
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
@@ -24,6 +25,7 @@ class LobbyScreen extends StatefulWidget {
 
 class _LobbyScreenState extends State<LobbyScreen> {
   late StreamController<List<User>> _controller;
+  List<User> users = [];
   late Object user; // This can be either HostUser or NormalUser
   late Game game;
   late GameState gameState;
@@ -38,8 +40,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
         id: widget.gameCode,
         isStarted: false,
         startGameCallback: startGame,
+        endGameCallback: endGame,
         updateStateCallback: updateGameState);
-    gameState = GameState();
+    gameState = GameState(false, false, [], "");
     if (widget.isHost) {
       user = HostUser(widget.name, widget.gameCode, _controller, game);
     } else {
@@ -94,7 +97,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
     });
   }
 
+  void endGame() {
+    setState(() {
+      gameStarted = false;
+    });
+  }
+
   void updateGameState(GameState gs) {
+    print("updateGameState: $gs");
+    if (!gameStarted) {
+      setState(() {
+        gameStarted = true;
+        gameState = gs;
+      });
+      return;
+    }
     setState(() {
       gameState = gs;
     });
@@ -107,9 +124,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final users = snapshot.data!;
+        final _users = snapshot.data!;
+        users = _users;
         if (!gameStarted && !game.isStarted) {
-          return _buildLobby(game, widget, users, user);
+          return _buildLobby(game, widget, _users, user);
         } else {
           return _buildGameScreen(gameState);
         }
@@ -137,7 +155,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           if (!gameStarted && !game.isStarted) {
             return _buildLobbyStream();
           } else {
-            return _buildGameScreen(gameState);
+            return _buildGameScreen(gameState, users, user);
           }
         }(),
       ),
@@ -145,15 +163,42 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 }
 
-Function _buildGameScreen = (GameState gameState) {
-  print("Game State");
-  print("isFascist: ${gameState.isFascist}");
-  print("isHitler: ${gameState.isHitler}");
-  print("otherFasicsts: ${gameState.otherFascists}");
-  print("histlerId: ${gameState.hitlerId}");
+Function _buildGameScreen =
+    (GameState gameState, List<User> users, Object user) {
+  // create a map of user id to user name
+  Map<String, String> userIdToName = {};
+  for (var user in users) {
+    userIdToName[user.id] = user.name;
+  }
 
-  return const Center(
-    child: Text('Game Screen'),
+  return Column(
+    children: [
+      for (var u in users)
+        if (u.id == (user as HostUser).id)
+          Text(
+              "${userIdToName[u.id]}: ${gameState.isHitler ? "Hitler" : gameState.isFascist ? "Fascist" : "Liberal"}")
+        else if (u.id == gameState.hitlerId)
+          Text(
+              "${userIdToName[u.id]}: Hitler ${u.id == (user as HostUser).id ? '(You)' : ''}")
+        else if (gameState.otherFascists.contains(u.id))
+          Text(
+              "${userIdToName[u.id]}: Fascist ${u.id == (user as HostUser).id ? '(You)' : ''}")
+        else
+          Text(
+              "${userIdToName[u.id]}: Liberal ${u.id == (user as HostUser).id ? '(You)' : ''}"),
+
+      // add button to end the game if the user is the host
+      if (user is HostUser)
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton(
+            onPressed: () {
+              user.endGame();
+            },
+            child: const Text('End Game'),
+          ),
+        ),
+    ],
   );
 };
 

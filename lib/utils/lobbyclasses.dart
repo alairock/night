@@ -41,7 +41,7 @@ class HostUser {
   final List<StreamSubscription> subscriptions = [];
   late List<DataConnection> connections = [];
   late Map<String, DataConnection> connectionMap = {};
-  late String hostId;
+  late String hostId, id;
   bool isAdding = false;
 
   HostUser(String name, this.gameCode, this.controller, this.game) {
@@ -51,6 +51,7 @@ class HostUser {
   void initializeHostUser(String name) {
     hostId = "night182388inu-$gameCode";
     peer = Peer(id: hostId);
+    id = hostId;
     connectedUsers.add(User(hostId, name, DateTime.now().toString(), true));
     setUpEventListeners();
     setUpPeriodicTasks();
@@ -92,11 +93,15 @@ class HostUser {
     }));
 
     subscriptions.add(peer.on<DataConnection>('disconnection').listen((data) {
+      print('Disconnection: Disconnect received: ${data.peer}');
       connectedUsers.remove(User(data.peer, '', '', false));
       isAdding = true;
       controller.add(List.from(connectedUsers));
       isAdding = false;
       connections.removeWhere((conn) => conn.peer == data.peer);
+      if (game.isStarted) {
+        game.endGame();
+      }
     }));
   }
 
@@ -117,7 +122,11 @@ class HostUser {
     connectedUsers.removeWhere((user) {
       var lastSeen = DateTime.parse(user.lastSeen);
       if (user.isHost) return false;
-      return now.difference(lastSeen).inSeconds > 5;
+      var isInactive = now.difference(lastSeen).inSeconds > 5;
+      if (isInactive && game.isStarted) {
+        game.endGame();
+      }
+      return isInactive;
     });
 
     if (!controller.isClosed) {
@@ -133,6 +142,16 @@ class HostUser {
       "data": {"users": connectedUsers.map((u) => u.toJson()).toList()}
     };
     broadcastEvent(payload);
+  }
+
+  void endGame() {
+    game.endGame();
+    var payload = {
+      "event": "end-game",
+      "data": "Game has ended",
+    };
+    broadcastEvent(payload);
+    sendLobbyList();
   }
 
   void startGame() {
@@ -182,7 +201,7 @@ class HostUser {
 
 class NormalUser {
   late Peer? peer;
-  late String gameCode, name, hostId;
+  late String gameCode, name, hostId, id;
   late List<User> connectedUsers = [];
   final StreamController<List<User>> controller;
   final List<StreamSubscription> subscriptions = [];
@@ -201,6 +220,7 @@ class NormalUser {
     hostId = "night182388inu-$gameCode";
     var peerId = "$hostId-${generateRandomCode(5)}";
     peer = Peer(id: peerId);
+    id = peerId;
     setUpEventListeners();
     setUpConnectionCheck();
   }
@@ -240,12 +260,12 @@ class NormalUser {
           }
           isAdding = false;
         }
-
-        if (payload['event'] == 'start-game') {
-          game.startGame();
+        if (payload['event'] == 'end-game') {
+          game.endGame();
         }
         if (payload['event'] == 'game-state') {
-          game.updateGameState(payload['data']);
+          var gs = GameState.fromJson(payload['data']);
+          game.updateGameState(gs);
         }
       });
     }));

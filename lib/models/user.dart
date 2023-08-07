@@ -19,4 +19,6 @@ class User {
         json['lastSeen'],
         json['isHost'],
       );
+
+  void endGame() {}
 }
