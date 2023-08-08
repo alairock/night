@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/new_game.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
           900: Color(0xFFE65100),
         })),
       ),
-      home: const HomeScreen(),
+      home: const NewGameScreen(),
     );
   }
 }
