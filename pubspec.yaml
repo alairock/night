@@ -11,6 +11,7 @@ dependencies:
   firebase_core: ^2.15.0
   flutter:
     sdk: flutter
+  url_launcher: ^6.0.10
   shared_preferences: ^2.0.5
   peerdart: ^0.5.2
   fluttertoast: ^8.0.8
@@ -22,3 +23,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/hitler.jpg
+    - assets/fascist.jpg
+    - assets/liberal.jpg
+    - assets/secret.jpg
+    - assets/shnight.png
+    - assets/lobby.png
+    - assets/lobbycode.png

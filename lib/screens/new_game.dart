@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:night/screens/lobby_screen.dart';
+import 'package:night/utils/footer.dart';
 import 'package:night/utils/lobby.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 class NewGameScreen extends StatefulWidget {
   const NewGameScreen({Key? key}) : super(key: key);
@@ -58,87 +60,112 @@ class NewGameScreenState extends State<NewGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Lobby"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: usernameController,
-              onChanged: (value) {
-                updateUsername(value);
-                setState(() {}); // triggers UI refresh
-              },
-              decoration: const InputDecoration(
-                labelText: "Username",
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: usernameController.text.isEmpty
-                  ? null
-                  : () async {
-                      var navigator = Navigator.of(context);
-                      String gameCode = generateRandomCode(5);
-                      if (username == "arst") {
-                        gameCode = "arst";
-                      }
-                      navigator.push(
-                        MaterialPageRoute(
-                          builder: (context) => LobbyScreen(
-                              gameCode: gameCode,
-                              name: usernameController.text,
-                              isHost: true),
-                        ),
-                      );
-                    },
-              child: const Text("New Game"),
-            ),
-            ElevatedButton(
-              onPressed: usernameController.text.isEmpty
-                  ? null
-                  : () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final TextEditingController codeController =
-                              TextEditingController();
-
-                          return AlertDialog(
-                            title: const Text("Enter Code"),
-                            content: TextField(
-                              controller: codeController,
-                            ),
-                            actions: [
-                              ElevatedButton(
-                                onPressed: () async {
-                                  var navigator = Navigator.of(context);
-                                  String enteredCode = codeController.text;
-                                  navigator.push(
-                                    MaterialPageRoute(
-                                      builder: (context) => LobbyScreen(
-                                          gameCode: enteredCode,
-                                          name: usernameController.text,
-                                          isHost: false),
-                                    ),
-                                  );
-                                },
-                                child: const Text("Join"),
+        appBar: AppBar(
+          title: const Image(
+            image: AssetImage("assets/lobby.png"),
+            width: 130,
+          ),
+        ),
+        body: Stack(children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: usernameController,
+                  onChanged: (value) {
+                    updateUsername(value);
+                    setState(() {}); // triggers UI refresh
+                  },
+                  decoration: const InputDecoration(
+                    labelText: "Username",
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: ElevatedButton(
+                    onPressed: usernameController.text.isEmpty
+                        ? null
+                        : () async {
+                            var navigator = Navigator.of(context);
+                            String gameCode = generateRandomCode(5);
+                            if (username == "arst") {
+                              gameCode = "ARST";
+                            }
+                            navigator.push(
+                              MaterialPageRoute(
+                                builder: (context) => LobbyScreen(
+                                    gameCode: gameCode,
+                                    name: usernameController.text,
+                                    isHost: true),
                               ),
-                            ],
+                            );
+                          },
+                    child: const Text("New Game"),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: usernameController.text.isEmpty
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              final TextEditingController codeController =
+                                  TextEditingController();
+                              return AlertDialog(
+                                title: const Text("Enter Code"),
+                                content: TextField(
+                                  controller: codeController,
+                                  maxLength: 10,
+                                  decoration: const InputDecoration(
+                                    counterText: "",
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.deny(
+                                        ''), // Prevent leading space
+                                    TextInputFormatter.withFunction(
+                                        (oldValue, newValue) {
+                                      return TextEditingValue(
+                                        text: newValue.text.toUpperCase(),
+                                        selection: newValue.selection,
+                                      );
+                                    }),
+                                  ],
+                                ),
+                                actions: [
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      var navigator = Navigator.of(context);
+                                      String enteredCode = codeController.text;
+                                      navigator.push(
+                                        MaterialPageRoute(
+                                          builder: (context) => LobbyScreen(
+                                              gameCode: enteredCode,
+                                              name: usernameController.text,
+                                              isHost: false),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text("Join"),
+                                  ),
+                                ],
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-              child: const Text("Join Game"),
+                  child: const Text("Join Game"),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: footer(),
+          ),
+        ]));
   }
 }

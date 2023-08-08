@@ -9,13 +9,13 @@ import '../models/game.dart';
 void addTestUsers(List<User> users, StreamController<List<User>> controller) {
   var timeForUsers = DateTime.now().toString();
   var testUsers = [
-    User('1', 'User 1', timeForUsers, false),
-    User('2', 'User 2', timeForUsers, false),
-    User('3', 'User 3', timeForUsers, false),
-    User('4', 'User 4', timeForUsers, false),
-    User('5', 'User 5', timeForUsers, false),
-    User('6', 'User 6', timeForUsers, false),
-    User('7', 'User 7', timeForUsers, false),
+    User('1', 'Francis', timeForUsers, false),
+    User('2', 'Theodore', timeForUsers, false),
+    User('3', 'Michaelangelo', timeForUsers, false),
+    User('4', 'Rocky', timeForUsers, false),
+    User('5', 'Devin', timeForUsers, false),
+    User('6', 'Tamantha', timeForUsers, false),
+    User('7', 'Britney', timeForUsers, false),
   ];
 
   var now = DateTime.now().toString();
@@ -57,10 +57,12 @@ class HostUser {
     setUpPeriodicTasks();
 
     // Send the lobby list to the connected users
-    addTestUsers(connectedUsers, controller);
-    Timer.periodic(const Duration(seconds: 5), (timer) {
+    if (gameCode == "ARST") {
       addTestUsers(connectedUsers, controller);
-    });
+      Timer.periodic(const Duration(seconds: 5), (timer) {
+        addTestUsers(connectedUsers, controller);
+      });
+    }
   }
 
   void setUpEventListeners() {
@@ -208,7 +210,7 @@ class NormalUser {
   late Function hostDisconnectedCallback;
   late Game game;
   bool isAdding = false;
-
+  Timer? connectionCheckTimer;
   DataConnection? hostConn;
 
   NormalUser(this.name, this.gameCode, this.controller,
@@ -272,10 +274,24 @@ class NormalUser {
   }
 
   void setUpConnectionCheck() {
-    Timer(const Duration(seconds: 1), () {
-      if (hostConn?.open == false) {
-        print('Close: Host did not respond');
-        hostDisconnectedCallback();
+    const int maxRetries = 3; // Number of retries
+    const int delayInSeconds = 3; // Delay between each retry in seconds
+
+    int retryCount = 0;
+
+    connectionCheckTimer =
+        Timer.periodic(const Duration(seconds: delayInSeconds), (Timer timer) {
+      if (hostConn?.open == true) {
+        print('Connection established: Host responded');
+        timer.cancel(); // Stop the timer if connection is open
+      } else {
+        print('Attempt ${retryCount + 1}: Host did not respond');
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          print('Close: Host did not respond');
+          hostDisconnectedCallback();
+          timer.cancel(); // Stop the timer after reaching max retries
+        }
       }
     });
   }
@@ -305,6 +321,7 @@ class NormalUser {
     }
     hostConn?.close();
     peer?.dispose();
+    connectionCheckTimer?.cancel();
     if (!controller.isClosed) {
       controller.close();
     }

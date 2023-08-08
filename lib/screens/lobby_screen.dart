@@ -29,7 +29,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
   late Object user; // This can be either HostUser or NormalUser
   late Game game;
   late GameState gameState;
-  bool gameStarted = false; // Step 1: Add the gameStarted variable.
+  bool gameStarted = false;
+  bool showRole = false;
 
   @override
   void initState() {
@@ -51,6 +52,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
   }
 
+  void updateShowRole() {
+    setState(() {
+      showRole = !showRole;
+    });
+  }
+
   void onHostDisconnected() {
     Fluttertoast.showToast(
       msg: 'You have been disconnected from the game.',
@@ -59,7 +66,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       backgroundColor: Colors.red,
       textColor: Colors.white,
     );
-    Navigator.of(context).pop(); // Navigate back from the Lobby screen
+    if (mounted) {
+      Navigator.of(context).pop(); // Navigate back from the Lobby screen
+    }
   }
 
   @override
@@ -100,11 +109,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void endGame() {
     setState(() {
       gameStarted = false;
+      showRole = false;
     });
   }
 
   void updateGameState(GameState gs) {
-    print("updateGameState: $gs");
     if (!gameStarted) {
       setState(() {
         gameStarted = true;
@@ -141,12 +150,49 @@ class _LobbyScreenState extends State<LobbyScreen> {
       onWillPop: () => onBackButtonPressed(context),
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Lobby: ${widget.gameCode}'),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                "assets/lobbycode.png",
+                width: 150,
+              ),
+              const SizedBox(
+                  width: 10), // Optional space between image and text
+              Text(
+                widget.gameCode,
+                style: const TextStyle(
+                  fontSize: 24.0, // Set this value to twice your desired size
+                  fontWeight: FontWeight.w900, // Extra bold weight
+                  color: Color(0xFFFEFEB5), // Set your required color
+                  shadows: [
+                    Shadow(
+                      color: Colors.black,
+                      offset: Offset(2.0, 2.0), // Set the offset for the shadow
+                      blurRadius: 0.0, // No feathering
+                    ),
+                    Shadow(
+                      color: Colors.black,
+                      offset: Offset(2.5, 2.5), // Set the offset for the shadow
+                      blurRadius: 0.0, // No feathering
+                    ),
+                    Shadow(
+                      color: Colors.black,
+                      offset: Offset(3.0, 3.0), // Set the offset for the shadow
+                      blurRadius: 0.0, // No feathering
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ), //Text('Lobby: ${widget.gameCode}'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              onBackButtonPressed(context).then((_) {
-                Navigator.of(context).pop();
+              onBackButtonPressed(context).then((shouldPop) {
+                if (shouldPop) {
+                  Navigator.of(context).pop();
+                }
               });
             },
           ),
@@ -155,7 +201,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
           if (!gameStarted && !game.isStarted) {
             return _buildLobbyStream();
           } else {
-            return _buildGameScreen(gameState, users, user);
+            return _buildGameScreen(
+                gameState, users, user, showRole, updateShowRole);
           }
         }(),
       ),
@@ -163,46 +210,168 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 }
 
-Function _buildGameScreen =
-    (GameState gameState, List<User> users, Object user) {
+Function _buildGameScreen = (GameState gameState, List<User> users, Object user,
+    bool showRole, Function updateShowRole) {
   // create a map of user id to user name
   Map<String, String> userIdToName = {};
   for (var user in users) {
     userIdToName[user.id] = user.name;
   }
 
-  return Column(
-    children: [
-      for (var u in users)
-        if (u.id == (user as HostUser).id)
-          Text(
-              "${userIdToName[u.id]}: ${gameState.isHitler ? "Hitler" : gameState.isFascist ? "Fascist" : "Liberal"}")
-        else if (u.id == gameState.hitlerId)
-          Text(
-              "${userIdToName[u.id]}: Hitler ${u.id == (user as HostUser).id ? '(You)' : ''}")
-        else if (gameState.otherFascists.contains(u.id))
-          Text(
-              "${userIdToName[u.id]}: Fascist ${u.id == (user as HostUser).id ? '(You)' : ''}")
-        else
-          Text(
-              "${userIdToName[u.id]}: Liberal ${u.id == (user as HostUser).id ? '(You)' : ''}"),
+  String myId = "";
+  if (user is HostUser) {
+    myId = user.id;
+  } else if (user is NormalUser) {
+    myId = user.id;
+  } else {
+    return Container();
+  }
 
-      // add button to end the game if the user is the host
-      if (user is HostUser)
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ElevatedButton(
-            onPressed: () {
-              user.endGame();
-            },
-            child: const Text('End Game'),
-          ),
-        ),
-    ],
-  );
+  return Scrollbar(
+      child: SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: Center(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showRole)
+                GestureDetector(
+                    onTap: () {
+                      updateShowRole();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 15),
+                      child: Image.asset(
+                        gameState.isHitler
+                            ? "assets/hitler.jpg"
+                            : gameState.isFascist
+                                ? "assets/fascist.jpg"
+                                : "assets/liberal.jpg",
+                        width: 150,
+                      ),
+                    ))
+              else
+                GestureDetector(
+                    onTap: () {
+                      updateShowRole();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 15),
+                      child: Image.asset(
+                        "assets/secret.jpg",
+                        width: 150,
+                      ),
+                    )),
+              if (gameState.isFascist &&
+                  gameState.otherFascists.isNotEmpty &&
+                  showRole)
+                // bold text
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 5),
+                  child: Text("Fellow Fascists:",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                ),
+              if (gameState.isFascist && showRole)
+                for (var fa in gameState.otherFascists)
+                  if (fa != myId)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: Text(
+                          "• ${userIdToName[fa]} ${fa == myId ? '(You)' : ''}",
+                        )),
+              const Text(""),
+              if (gameState.hitlerId != "" &&
+                  gameState.hitlerId != myId &&
+                  showRole)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 5),
+                  child: Text("Hitler:",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                ),
+              if (gameState.hitlerId != "" &&
+                  gameState.hitlerId != myId &&
+                  showRole)
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Text(
+                      "• Hitler: ${userIdToName[gameState.hitlerId]}",
+                    )),
+              if (!showRole) const Text(""),
+              // bold text
+              if (!showRole)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 5),
+                  child: Text("Sit in this order:",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                ),
+              if (!showRole)
+                for (var u in users)
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text(
+                        "• ${userIdToName[u.id]} ${u.id == myId ? '(You)' : ''}",
+                      )),
+              if (user is HostUser)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    onPressed: user.endGame,
+                    child: const Text('End Game'),
+                  ),
+                ),
+            ],
+          ))));
 };
 
-// function for _buildLobby(users);
+LayoutBuilder _listUsers(List<User> users, Object user) {
+  String myId = "";
+  if (user is HostUser) {
+    myId = user.id;
+  } else if (user is NormalUser) {
+    myId = user.id;
+  } else {
+    return LayoutBuilder(builder: (context, constraints) {
+      return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: Container());
+    });
+  }
+
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      double padding = 0;
+      if (constraints.maxWidth > 800) {
+        padding = constraints.maxWidth * 0.1; // 10% padding on either side
+      }
+
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: padding),
+        child: ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final user = users[index];
+            return Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              color: index % 2 == 0 ? Colors.grey[200] : Colors.white,
+              child: ListTile(
+                leading:
+                    users[index].isHost ? const Icon(Icons.king_bed) : null,
+                title: Text(
+                  user.name + (users[index].id == myId ? ' (You)' : ''),
+                  style: const TextStyle(color: Colors.black),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
 Function _buildLobby =
     (Game game, LobbyScreen widget, List<User> users, Object user) {
   if (users.length >= game.minPlayers && widget.isHost) {
@@ -210,17 +379,7 @@ Function _buildLobby =
     if (users.length > game.maxPlayers) {
       return Column(
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, index) => ListTile(
-                title: Text(users[index].name),
-                tileColor: users[index].isHost
-                    ? const Color.fromARGB(255, 239, 239, 239)
-                    : null,
-              ),
-            ),
-          ),
+          Expanded(child: _listUsers(users, user)),
           const Padding(
             padding: EdgeInsets.all(8.0),
             child: Text(
@@ -236,17 +395,7 @@ Function _buildLobby =
     } else {
       return Column(
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, index) => ListTile(
-                title: Text(users[index].name),
-                tileColor: users[index].isHost
-                    ? const Color.fromARGB(255, 239, 239, 239)
-                    : null,
-              ),
-            ),
-          ),
+          Expanded(child: _listUsers(users, user)),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
@@ -260,12 +409,5 @@ Function _buildLobby =
       );
     }
   }
-  return ListView.builder(
-    itemCount: users.length,
-    itemBuilder: (context, index) => ListTile(
-      title: Text(users[index].name),
-      tileColor:
-          users[index].isHost ? const Color.fromARGB(255, 239, 239, 239) : null,
-    ),
-  );
+  return Column(children: [Expanded(child: _listUsers(users, user))]);
 };
