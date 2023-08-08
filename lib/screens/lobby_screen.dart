@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
