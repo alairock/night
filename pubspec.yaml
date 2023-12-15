@@ -7,8 +7,6 @@ environment:
   sdk: '>=3.0.6 <4.0.0'
 
 dependencies:
-  cloud_firestore: ^4.8.3
-  firebase_core: ^2.15.0
   flutter:
     sdk: flutter
   url_launcher: ^6.0.10
@@ -23,11 +21,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/hitler.jpg
-    - assets/fascist.jpg
-    - assets/liberal.jpg
-    - assets/secret.jpg
-    - assets/shnight.png
-    - assets/lobby.png
-    - assets/lobbycode.png
+  # assets:
+  #   # - assets/hitler.jpg
+  #   # - assets/fascist.jpg
+  #   # - assets/liberal.jpg
+  #   # - assets/secret.jpg
+  #   # - assets/shnight.png
+  #   # - assets/lobby.png
+  #   - assets/lobbycode.png
