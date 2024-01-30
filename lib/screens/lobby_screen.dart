@@ -12,13 +12,14 @@ class LobbyScreen extends StatefulWidget {
   final String name;
 
   const LobbyScreen({
-    Key? key,
+    super.key,
     required this.gameCode,
     required this.name,
     required this.isHost,
-  }) : super(key: key);
+  });
 
   @override
+  // ignore: library_private_types_in_public_api
   _LobbyScreenState createState() => _LobbyScreenState();
 }
 
@@ -62,7 +63,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       msg: 'You have been disconnected from the game.',
       gravity: ToastGravity.TOP_LEFT,
       timeInSecForIosWeb: 3,
-      backgroundColor: Colors.red,
+      backgroundColor: const Color(0xFFEF6639),
       textColor: Colors.white,
     );
     if (mounted) {
@@ -132,6 +133,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
+        // ignore: no_leading_underscores_for_local_identifiers
         final _users = snapshot.data!;
         users = _users;
         if (!gameStarted && !game.isStarted) {
@@ -149,6 +151,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       onWillPop: () => onBackButtonPressed(context),
       child: Scaffold(
         appBar: AppBar(
+          backgroundColor: const Color(0xFFEF6639),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -317,6 +320,10 @@ Function _buildGameScreen = (GameState gameState, List<User> users, Object user,
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0XFFde6e46),
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: user.endGame,
                     child: const Text('End Game'),
                   ),
@@ -384,7 +391,7 @@ Function _buildLobby =
             child: Text(
               'You can have a maximum of 10 players in a game.',
               style: TextStyle(
-                color: Colors.red,
+                color: Color(0xFFEF6639),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -398,6 +405,10 @@ Function _buildLobby =
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0XFFde6e46),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 (user as HostUser).startGame();
               },

@@ -17,15 +17,15 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   # - assets/hitler.jpg
-  #   # - assets/fascist.jpg
-  #   # - assets/liberal.jpg
-  #   # - assets/secret.jpg
-  #   # - assets/shnight.png
-  #   # - assets/lobby.png
-  #   - assets/lobbycode.png
+  assets:
+    - assets/hitler.jpg
+    - assets/fascist.jpg
+    - assets/liberal.jpg
+    - assets/secret.jpg
+    - assets/shnight.png
+    - assets/lobby.png
+    - assets/lobbycode.png

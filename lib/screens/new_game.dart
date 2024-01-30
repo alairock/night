@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
 class NewGameScreen extends StatefulWidget {
-  const NewGameScreen({Key? key}) : super(key: key);
+  const NewGameScreen({super.key});
 
   @override
   NewGameScreenState createState() => NewGameScreenState();
@@ -62,9 +62,10 @@ class NewGameScreenState extends State<NewGameScreen> {
     return Scaffold(
         appBar: AppBar(
           title: const Image(
-            image: AssetImage("assets/lobby.png"),
+            image: AssetImage("assets/shnight.png"),
             width: 130,
           ),
+          backgroundColor: const Color(0xFFDE6E46),
         ),
         body: Stack(children: [
           Padding(
@@ -87,6 +88,10 @@ class NewGameScreenState extends State<NewGameScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10.0),
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0XFFde6e46),
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: usernameController.text.isEmpty
                         ? null
                         : () async {
@@ -108,6 +113,10 @@ class NewGameScreenState extends State<NewGameScreen> {
                   ),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0XFFde6e46),
+                  ),
                   onPressed: usernameController.text.isEmpty
                       ? null
                       : () {
@@ -118,7 +127,10 @@ class NewGameScreenState extends State<NewGameScreen> {
                                   TextEditingController();
                               return AlertDialog(
                                 title: const Text("Enter Code"),
+                                backgroundColor: Colors.white,
                                 content: TextField(
+                                  focusNode: FocusNode(),
+                                  autofocus: true,
                                   controller: codeController,
                                   maxLength: 10,
                                   decoration: const InputDecoration(
@@ -138,6 +150,10 @@ class NewGameScreenState extends State<NewGameScreen> {
                                 ),
                                 actions: [
                                   ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0XFFde6e46),
+                                      foregroundColor: Colors.white,
+                                    ),
                                     onPressed: () async {
                                       var navigator = Navigator.of(context);
                                       String enteredCode = codeController.text;

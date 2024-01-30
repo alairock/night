@@ -1,5 +1,4 @@
 import 'package:night/models/user.dart';
-import 'dart:math';
 
 class GameState {
   late bool isHitler = false;

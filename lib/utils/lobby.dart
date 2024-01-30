@@ -17,6 +17,7 @@ Future<bool> onBackButtonPressed(BuildContext context) async {
     builder: (dialogContext) => AlertDialog(
       title: const Text('Confirm'),
       content: const Text('Do you really want to leave the lobby?'),
+      backgroundColor: const Color(0XFFDE6E46),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
