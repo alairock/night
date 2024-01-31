@@ -203,31 +203,36 @@ class LobbyScreenState extends State<LobbyScreen> {
             width: 150,
           ),
           const SizedBox(width: 10), // Space between image and text
-          Text(
-            widget.gameCode,
-            style: const TextStyle(
-              fontSize: 24.0, // Size of the text
-              fontWeight: FontWeight.w900, // Boldness of the text
-              color: Color(0xFFFEFEB5), // Color of the text
-              shadows: [
-                Shadow(
-                  color: Colors.black,
-                  offset: Offset(2.0, 2.0), // Shadow offset
-                  blurRadius: 0.0, // Shadow blur radius
-                ),
-                Shadow(
-                  color: Colors.black,
-                  offset: Offset(2.5, 2.5),
-                  blurRadius: 0.0,
-                ),
-                Shadow(
-                  color: Colors.black,
-                  offset: Offset(3.0, 3.0),
-                  blurRadius: 0.0,
-                ),
-              ],
+          Theme(
+            data: Theme.of(context).copyWith(
+                textSelectionTheme: const TextSelectionThemeData(
+                    selectionColor: Colors.orange)),
+            child: SelectableText(
+              widget.gameCode,
+              style: const TextStyle(
+                fontSize: 24.0, // Size of the text
+                fontWeight: FontWeight.w900, // Boldness of the text
+                color: Color(0xFFFEFEB5), // Color of the text
+                shadows: [
+                  Shadow(
+                    color: Colors.black,
+                    offset: Offset(2.0, 2.0), // Shadow offset
+                    blurRadius: 0.0, // Shadow blur radius
+                  ),
+                  Shadow(
+                    color: Colors.black,
+                    offset: Offset(2.5, 2.5),
+                    blurRadius: 0.0,
+                  ),
+                  Shadow(
+                    color: Colors.black,
+                    offset: Offset(3.0, 3.0),
+                    blurRadius: 0.0,
+                  ),
+                ],
+              ),
             ),
-          ),
+          )
         ],
       ),
       leading: IconButton(

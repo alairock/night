@@ -98,7 +98,7 @@ class NewGameScreenState extends State<NewGameScreen> {
                         : () async {
                             var navigator = Navigator.of(context);
                             String gameCode = generateRandomCode(5);
-                            if (username == "arst") {
+                            if (usernameController.text == "arst") {
                               gameCode = "ARST";
                             }
                             navigator.push(
