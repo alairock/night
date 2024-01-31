@@ -14,6 +14,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Color(0xFFEF6639),
+          selectionColor: Color(0xFFEF6639),
+          selectionHandleColor: Color(0xFFEF6639),
+        ),
         scaffoldBackgroundColor: const Color(0xFFFAFAFA),
         colorScheme: ColorScheme.fromSwatch(
             primarySwatch: const MaterialColor(0xFFFAFAFA, {
