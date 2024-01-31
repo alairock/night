@@ -75,7 +75,6 @@ class NewGameScreenState extends State<NewGameScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextField(
-                  cursorColor: Colors.black,
                   enableInteractiveSelection: true,
                   controller: usernameController,
                   onChanged: (value) {
