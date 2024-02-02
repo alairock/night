@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
-import 'package:night/utils/lobbyclasses.dart';
+import 'package:night/utils/user_management.dart';
 
 // Define a type alias for better readability
 typedef GameScreenBuilder = Function(GameState gameState, List<User> users,
@@ -19,7 +19,7 @@ GameScreenBuilder buildGameScreen({
 
     String myId = "";
     if (user is HostUser) {
-      myId = user.id;
+      myId = user.hostId;
     } else if (user is NormalUser) {
       myId = user.id;
     } else {

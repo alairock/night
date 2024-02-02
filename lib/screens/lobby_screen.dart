@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:night/utils/lobbyclasses.dart';
+import 'package:night/utils/user_management.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
 import 'package:night/screens/game_screen.dart';

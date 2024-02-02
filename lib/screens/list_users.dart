@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:night/models/user.dart';
-import 'package:night/utils/lobbyclasses.dart';
+import 'package:night/utils/user_management.dart';
 
 class UserListBuilder {
   static String _determineUserId(Object user) {
