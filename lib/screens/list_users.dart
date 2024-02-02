@@ -9,12 +9,8 @@ class UserListBuilder {
         return user.id;
       }
       return "";
-      // raise error
-      // throw Exception("User is not of type User");
     }
     return "";
-    // raise error
-    // throw Exception("User is not of type HostUser or NormalUser");
   }
 
   static LayoutBuilder buildUserList(List<User> users, Object user) {

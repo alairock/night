@@ -8,7 +8,7 @@ import 'package:night/utils/lobbyclasses.dart';
 typedef LobbyBuilder = Function(
     Game game, Widget widget, List<User> users, Object user);
 
-LobbyBuilder buildLobby({required HostUser hostUser}) {
+LobbyBuilder buildLobby({required AbstractUser hostUser}) {
   return (Game game, Widget widget, List<User> users, Object user) {
     if (users.length >= game.minPlayers && (widget as LobbyScreen).isHost) {
       // add button to start the game

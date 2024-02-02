@@ -94,13 +94,13 @@ class LobbyScreenState extends State<LobbyScreen> {
   }
 
   Widget _buildLobby() {
-    LobbyBuilder lobbyBuilder = buildLobby(hostUser: user as HostUser);
+    LobbyBuilder lobbyBuilder = buildLobby(hostUser: user as AbstractUser);
     return lobbyBuilder(game, widget, users, user);
   }
 
   Widget _buildGameScreen() {
     GameScreenBuilder gameScreenBuilder = buildGameScreen(
-      hostUser: user as HostUser,
+      hostUser: user as AbstractUser,
     );
     return gameScreenBuilder(gameState, users, user, showRole, updateShowRole);
   }

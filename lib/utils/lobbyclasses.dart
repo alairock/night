@@ -32,7 +32,12 @@ void addTestUsers(List<User> users, StreamController<List<User>> controller) {
   }
 }
 
-class HostUser {
+abstract class AbstractUser {
+  // Define the common properties and methods here
+  void startGame();
+}
+
+class HostUser implements AbstractUser {
   late Peer peer;
   late List<User> connectedUsers = [];
   final String gameCode;
@@ -96,7 +101,8 @@ class HostUser {
 
     subscriptions.add(peer.on<DataConnection>('disconnection').listen((data) {
       print('Disconnection: Disconnect received: ${data.peer}');
-      connectedUsers.remove(User(data.peer, '', '', false));
+      connectedUsers.removeWhere((user) => user.id == data.peer);
+      connectionMap.remove(data.peer);
       isAdding = true;
       controller.add(List.from(connectedUsers));
       isAdding = false;
@@ -156,6 +162,7 @@ class HostUser {
     sendLobbyList();
   }
 
+  @override
   void startGame() {
     Map<String, GameState> userStates = game.nightPhase(connectedUsers);
     userStates.forEach((key, value) {
@@ -201,7 +208,7 @@ class HostUser {
   }
 }
 
-class NormalUser {
+class NormalUser implements AbstractUser {
   late Peer? peer;
   late String gameCode, name, hostId, id;
   late List<User> connectedUsers = [];
@@ -218,6 +225,11 @@ class NormalUser {
     initializeNormalUser();
   }
 
+  @override
+  void startGame() {
+    // do nothing
+  }
+
   void initializeNormalUser() {
     hostId = "night182388inu-$gameCode";
     var peerId = "$hostId-${generateRandomCode(5)}";
@@ -225,6 +237,28 @@ class NormalUser {
     id = peerId;
     setUpEventListeners();
     setUpConnectionCheck();
+  }
+
+  void attemptReconnect() {
+    int retries = 0;
+    const maxRetries = 3;
+
+    Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (retries >= maxRetries) {
+        print('Reconnection failed after $maxRetries attempts');
+        hostDisconnectedCallback();
+        timer.cancel();
+        return;
+      }
+      print('Reconnection attempt ${retries + 1}');
+      hostConn = peer?.connect(hostId);
+      if (hostConn?.open == true) {
+        print('Reconnection successful');
+        sendUserJoinEvent();
+        timer.cancel();
+      }
+      retries++;
+    });
   }
 
   void setUpEventListeners() {
@@ -246,6 +280,13 @@ class NormalUser {
 
       hostConn?.on('close').listen((_) {
         print('Close: Host has left the game');
+        // attemptReconnect();
+        hostDisconnectedCallback();
+      });
+
+      hostConn?.on('error').listen((error) {
+        print('Connection error: $error');
+        // attemptReconnect();
         hostDisconnectedCallback();
       });
 

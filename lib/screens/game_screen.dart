@@ -8,7 +8,7 @@ typedef GameScreenBuilder = Function(GameState gameState, List<User> users,
     Object user, bool showRole, Function updateShowRole);
 
 GameScreenBuilder buildGameScreen({
-  required HostUser hostUser,
+  required AbstractUser hostUser,
 }) {
   return (GameState gameState, List<User> users, Object user, bool showRole,
       Function updateShowRole) {
