@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'screens/new_game.dart';
 
 void main() async {
+  Logger.root.level = Level.ALL; // Log all messages
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }

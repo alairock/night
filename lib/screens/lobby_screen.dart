@@ -238,7 +238,7 @@ class LobbyScreenState extends State<LobbyScreen> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () {
-          onBackButtonPressed(context).then((shouldPop) {
+          renderBackButtonModal(context).then((shouldPop) {
             if (shouldPop) {
               Navigator.of(context).pop();
             }

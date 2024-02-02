@@ -11,7 +11,7 @@ String generateRandomCode(int length) {
   ));
 }
 
-Future<bool> onBackButtonPressed(BuildContext context) async {
+Future<bool> renderBackButtonModal(BuildContext context) async {
   final bool? shouldPop = await showDialog(
     context: context,
     builder: (dialogContext) => AlertDialog(
