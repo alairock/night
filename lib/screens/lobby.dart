@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
 import 'package:night/screens/lobby_screen.dart';
+import 'package:night/utils/user_mgmt/abstract.dart';
 import 'list_users.dart'; // Assuming this is the path to your list_users.dart
-import 'package:night/utils/user_management.dart';
 
 typedef LobbyBuilder = Function(
     Game game, Widget widget, List<User> users, Object user);

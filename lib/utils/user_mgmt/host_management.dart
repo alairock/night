@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:peerdart/peerdart.dart';
 import "package:night/models/user.dart";
 import "package:night/models/game.dart";
-import "package:night/utils/random_code.dart";
 import 'package:logging/logging.dart';
+import "package:night/utils/user_mgmt/abstract.dart";
 
-final Logger _logger = Logger('UserManagement');
+final Logger _logger = Logger('HostManagement');
 
 void addTestUsers(List<User> users, StreamController<List<User>> controller,
     [Map<String, UserConnection>? userConnections]) {
@@ -35,19 +35,6 @@ void addTestUsers(List<User> users, StreamController<List<User>> controller,
   Timer(const Duration(seconds: 0), () {
     controller.add(users);
   });
-}
-
-abstract class AbstractUser {
-  // Define the common properties and methods here
-  void startGame();
-}
-
-class UserConnection {
-  User user;
-  DataConnection? connection;
-  String lastSeen = DateTime.now().toString();
-
-  UserConnection(this.user, this.connection);
 }
 
 class HostUser implements AbstractUser {
@@ -91,10 +78,6 @@ class HostUser implements AbstractUser {
   }
 
   void setUpEventListeners() {
-    subscriptions.add(peer.on('open').listen((conn_id) {
-      _logger.info('Open: We are the host');
-    }));
-
     subscriptions.add(peer.on<DataConnection>('connection').listen((peerConn) {
       _logger.info('Connecting... ${peerConn.peer}');
       peerConn.on('open').listen((_) {
@@ -228,162 +211,6 @@ class HostUser implements AbstractUser {
     }
     for (var timer in timers) {
       timer.cancel();
-    }
-  }
-}
-
-class NormalUser implements AbstractUser {
-  late Peer? peer;
-  late String gameCode, name, hostId, id;
-  final StreamController<List<User>> controller;
-  final List<StreamSubscription> subscriptions = [];
-  late Function hostDisconnectedCallback;
-  late Game game;
-  Timer? connectionCheckTimer;
-  DataConnection? hostConn;
-
-  NormalUser(this.name, this.gameCode, this.controller,
-      this.hostDisconnectedCallback, this.game) {
-    initializeNormalUser();
-  }
-
-  @override
-  void startGame() {
-    // do nothing, only the host does this.
-  }
-
-  void initializeNormalUser() {
-    hostId = "night182388inu-$gameCode";
-    var peerId = "$hostId-${generateRandomCode(5)}";
-    peer = Peer(id: peerId);
-    id = peerId;
-    setUpEventListeners();
-    setUpPeriodicTasks();
-  }
-
-  void setUpEventListeners() {
-    subscriptions.add(peer!.on('open').listen((_) {
-      _logger.info('Open: We are not the host');
-      hostConn = peer?.connect(hostId);
-      hostConn?.on('open').listen((_) {
-        _logger.info('Open: Host connection established');
-
-        sendUserJoinEvent();
-        Timer.periodic(const Duration(seconds: 5), (timer) {
-          if (hostConn?.open == false) {
-            timer.cancel();
-            return;
-          }
-          sendUserJoinEvent();
-        });
-      });
-
-      hostConn?.on('close').listen((_) {
-        _logger.info('Close: Host has left the game');
-        hostDisconnectedCallback();
-      });
-
-      hostConn?.on('error').listen((error) {
-        _logger.info('Connection error: $error');
-        // attemptReconnect();
-        hostDisconnectedCallback();
-      });
-
-      hostConn?.on('data').listen((data) {
-        var payload = jsonDecode(data);
-        if (payload['event'] == 'lobby-list') {
-          _logger.info('Lobby list received');
-          var users = List<User>.from(
-              payload['data']['users'].map((user) => User.fromJson(user)));
-
-          if (!controller.isClosed) {
-            controller.add(List.from(users));
-          }
-        }
-        if (payload['event'] == 'end-game') {
-          game.endGame();
-        }
-        if (payload['event'] == 'game-state') {
-          var gs = GameState.fromJson(payload['data']);
-          game.updateGameState(gs);
-        }
-      });
-    }));
-  }
-
-  void setUpPeriodicTasks() {
-    const int maxRetries = 3; // Number of retries
-    const int delayInSeconds = 3; // Delay between each retry in seconds
-
-    int retryCount = 0;
-
-    connectionCheckTimer =
-        Timer.periodic(const Duration(seconds: delayInSeconds), (Timer timer) {
-      if (hostConn?.open == true) {
-        _logger.info('Connection established: Host responded');
-        timer.cancel(); // Stop the timer if connection is open
-      } else {
-        _logger.info('Attempt ${retryCount + 1}: Host did not respond');
-        retryCount++;
-        if (retryCount >= maxRetries) {
-          _logger.info('Close: Host did not respond');
-          hostDisconnectedCallback();
-          timer.cancel(); // Stop the timer after reaching max retries
-        }
-      }
-    });
-  }
-
-  void sendUserJoinEvent([String? timestamp]) {
-    var payload = {
-      "event": "user-join",
-      "timestamp": timestamp ?? DateTime.now().toString(),
-      "data": User(peer?.id ?? "", name, timestamp ?? DateTime.now().toString(),
-              false)
-          .toJson()
-    };
-    sendHostMessage(payload);
-  }
-
-  void sendHostMessage(Map<String, dynamic> payload) {
-    if (hostConn?.open == false) return;
-    hostConn?.send(jsonEncode(payload));
-  }
-
-  void attemptReconnect() {
-    int retries = 0;
-    const maxRetries = 3;
-
-    Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (retries >= maxRetries) {
-        _logger.info('Reconnection failed after $maxRetries attempts');
-        hostDisconnectedCallback();
-        timer.cancel();
-        return;
-      }
-      _logger.info('Reconnection attempt ${retries + 1}');
-      hostConn = peer?.connect(hostId);
-      if (hostConn?.open == true) {
-        _logger.info('Reconnection successful');
-        sendUserJoinEvent();
-        timer.cancel();
-      }
-      retries++;
-    });
-  }
-
-  void dispose() {
-    var timestamp =
-        DateTime.now().subtract(const Duration(seconds: 30)).toString();
-    sendUserJoinEvent(timestamp);
-    for (var subscription in subscriptions) {
-      subscription.cancel();
-    }
-    hostConn?.close();
-    peer?.dispose();
-    connectionCheckTimer?.cancel();
-    if (!controller.isClosed) {
-      controller.close();
     }
   }
 }

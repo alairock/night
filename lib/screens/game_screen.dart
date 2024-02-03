@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
-import 'package:night/utils/user_management.dart';
+import 'package:night/utils/user_mgmt/abstract.dart';
+import 'package:night/utils/user_mgmt/host_management.dart';
+import 'package:night/utils/user_mgmt/user_management.dart';
 
 // Define a type alias for better readability
 typedef GameScreenBuilder = Function(GameState gameState, List<User> users,
