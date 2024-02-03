@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:night/utils/user_management.dart';
 import 'package:night/models/game.dart';
 import 'package:night/models/user.dart';
 import 'package:night/screens/game_screen.dart';
 import 'package:night/screens/lobby.dart';
-import 'package:night/utils/lobby.dart';
+import 'package:night/utils/user_management.dart';
 
 class LobbyScreen extends StatefulWidget {
   final String gameCode;
@@ -25,7 +24,8 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class LobbyScreenState extends State<LobbyScreen> {
-  late StreamController<List<User>> _controller;
+  late StreamController<List<User>> _controller =
+      StreamController<List<User>>.broadcast();
   List<User> users = [];
   late Object user; // This can be either HostUser or NormalUser
   late Game game;
@@ -37,11 +37,15 @@ class LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
+    _buildLobbyStream();
     _initializeLobby();
   }
 
-  void _initializeLobby() {
+  void _buildLobbyStream() {
     _controller = StreamController<List<User>>.broadcast();
+  }
+
+  void _initializeLobby() {
     game = Game(
         id: widget.gameCode,
         isStarted: false,
@@ -49,6 +53,7 @@ class LobbyScreenState extends State<LobbyScreen> {
         endGameCallback: endGame,
         updateStateCallback: updateGameState);
     gameState = GameState(false, false, [], "");
+
     user = widget.isHost
         ? HostUser(widget.name, widget.gameCode, _controller, game)
         : NormalUser(widget.name, widget.gameCode, _controller,
@@ -64,23 +69,13 @@ class LobbyScreenState extends State<LobbyScreen> {
 
   void _disposeUser() {
     if (user is HostUser) {
-      _disposeHostUser();
+      (user as HostUser).dispose();
     } else if (user is NormalUser) {
-      _disposeNormalUser();
+      (user as NormalUser).dispose();
     }
   }
 
-  void _disposeHostUser() {
-    HostUser hu = user as HostUser;
-    hu.dispose();
-  }
-
-  void _disposeNormalUser() {
-    NormalUser nu = user as NormalUser;
-    nu.dispose();
-  }
-
-  StreamBuilder<List<User>> _buildLobbyStream() {
+  StreamBuilder<List<User>> _buildLobbyStreamBuilder() {
     return StreamBuilder<List<User>>(
       stream: _controller.stream,
       builder: (context, snapshot) {
@@ -120,7 +115,7 @@ class LobbyScreenState extends State<LobbyScreen> {
       textColor: Colors.white,
     );
     if (mounted) {
-      Navigator.of(context).pop(); // Navigate back from the Lobby screen
+      Navigator.of(context).pop();
     }
   }
 
@@ -138,58 +133,20 @@ class LobbyScreenState extends State<LobbyScreen> {
   }
 
   void updateGameState(GameState gs) {
-    if (!gameStarted) {
-      setState(() {
-        gameStarted = true;
-        gameState = gs;
-      });
-      return;
-    }
     setState(() {
+      if (!gameStarted) {
+        gameStarted = true;
+      }
       gameState = gs;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: allowPop,
-      onPopInvoked: (bool didPop) async {
-        if (!didPop) {
-          await _handleBackButtonPress();
-        }
-      },
-      child: Scaffold(
-        appBar: _buildAppBar(),
-        body: _buildLobbyStream(),
-      ),
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: _buildLobbyStreamBuilder(),
     );
-  }
-
-  Future<void> _handleBackButtonPress() async {
-    final shouldPop = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Confirm'),
-            content: const Text('Do you really want to leave the lobby?'),
-            backgroundColor: const Color(0XFFDE6E46),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Yes'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    setState(() {
-      allowPop = shouldPop;
-    });
   }
 
   AppBar _buildAppBar() {
@@ -198,53 +155,44 @@ class LobbyScreenState extends State<LobbyScreen> {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            "assets/lobbycode.png",
-            width: 150,
-          ),
-          const SizedBox(width: 10), // Space between image and text
-          Theme(
-            data: Theme.of(context).copyWith(
-                textSelectionTheme: const TextSelectionThemeData(
-                    selectionColor: Colors.orange)),
-            child: SelectableText(
-              widget.gameCode,
+          Image.asset("assets/lobbycode.png", width: 150),
+          const SizedBox(width: 10),
+          SelectableText(widget.gameCode,
               style: const TextStyle(
-                fontSize: 24.0, // Size of the text
-                fontWeight: FontWeight.w900, // Boldness of the text
-                color: Color(0xFFFEFEB5), // Color of the text
-                shadows: [
-                  Shadow(
-                    color: Colors.black,
-                    offset: Offset(2.0, 2.0), // Shadow offset
-                    blurRadius: 0.0, // Shadow blur radius
-                  ),
-                  Shadow(
-                    color: Colors.black,
-                    offset: Offset(2.5, 2.5),
-                    blurRadius: 0.0,
-                  ),
-                  Shadow(
-                    color: Colors.black,
-                    offset: Offset(3.0, 3.0),
-                    blurRadius: 0.0,
-                  ),
-                ],
-              ),
-            ),
-          )
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFFFEFEB5))),
         ],
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () {
-          renderBackButtonModal(context).then((shouldPop) {
-            if (shouldPop) {
-              Navigator.of(context).pop();
-            }
-          });
+        onPressed: () async {
+          final shouldPop = await _handleBackButtonPress();
+          if (mounted && shouldPop) {
+            Navigator.of(context).pop();
+          }
         },
       ),
     );
+  }
+
+  Future<bool> _handleBackButtonPress() async {
+    final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Confirm'),
+            content: const Text('Do you really want to leave the lobby?'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('No')),
+              TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Yes')),
+            ],
+          ),
+        ) ??
+        false;
+    return shouldPop;
   }
 }

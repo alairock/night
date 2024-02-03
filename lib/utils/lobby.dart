@@ -1,15 +1,5 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
-
-String generateRandomCode(int length) {
-  const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  Random rnd = Random();
-  return String.fromCharCodes(Iterable.generate(
-    length,
-    (_) => chars.codeUnitAt(rnd.nextInt(chars.length)),
-  ));
-}
 
 Future<bool> renderBackButtonModal(BuildContext context) async {
   final bool? shouldPop = await showDialog(

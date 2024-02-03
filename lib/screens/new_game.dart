@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:night/screens/lobby_screen.dart';
 import 'package:night/utils/footer.dart';
-import 'package:night/utils/lobby.dart';
+import 'package:night/utils/random_code.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 

@@ -2,26 +2,37 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:peerdart/peerdart.dart';
 import "package:night/models/user.dart";
-import "package:night/utils/lobby.dart";
-
-import '../models/game.dart';
+import "package:night/models/game.dart";
+import "package:night/utils/random_code.dart";
 import 'package:logging/logging.dart';
 
 final Logger _logger = Logger('UserManagement');
 
-void addTestUsers(List<User> users, StreamController<List<User>> controller) {
+void addTestUsers(List<User> users, StreamController<List<User>> controller,
+    [Map<String, UserConnection>? userConnections]) {
   var timeForUsers = DateTime.now().toString();
 
-  users.add(User('1', 'Francis', timeForUsers, false));
-  users.add(User('2', 'Theodore', timeForUsers, false));
-  users.add(User('3', 'Michaelangelo', timeForUsers, false));
-  users.add(User('4', 'Rocky', timeForUsers, false));
-  users.add(User('5', 'Devin', timeForUsers, false));
-  users.add(User('6', 'Tamantha', timeForUsers, false));
-  users.add(User('7', 'Britney', timeForUsers, false));
+  conditionalAdd(name, id) {
+    if (users.where((user) => user.id == id).isEmpty) {
+      users.add(User(id, name, timeForUsers, false));
+    }
+  }
+
+  conditionalAdd('Francis', '1');
+  conditionalAdd('Theodore', '2');
+  conditionalAdd('Michaelangelo', '3');
+  conditionalAdd('Rocky', '4');
+  conditionalAdd('Devin', '5');
+  conditionalAdd('Tamantha', '6');
+  conditionalAdd('Britney', '7');
+
+  if (userConnections != null) {
+    for (var user in users) {
+      userConnections[user.id] = UserConnection(user, null);
+    }
+  }
 
   Timer(const Duration(seconds: 0), () {
-    _logger.info("Adding host user to the controller");
     controller.add(users);
   });
 }
@@ -47,6 +58,7 @@ class HostUser implements AbstractUser {
   final List<StreamSubscription> subscriptions = [];
   late String hostId, id;
   late Map<String, UserConnection> userConnections = {};
+  late List<Timer> timers = [];
 
   HostUser(String name, this.gameCode, this.controller, this.game) {
     initializeHostUser(name);
@@ -57,22 +69,30 @@ class HostUser implements AbstractUser {
     peer = Peer(id: hostId);
     var user = User(hostId, name, DateTime.now().toString(), true);
     userConnections[hostId] = UserConnection(user, null);
+    _logger.info("Starting host user with id: $hostId");
 
     setUpEventListeners();
     setUpPeriodicTasks();
 
     // Send the lobby list to the connected users
     if (gameCode == "ARST") {
-      addTestUsers(
-          userConnections.values.map((uc) => uc.user).toList(), controller);
+      addTestUsers(userConnections.values.map((uc) => uc.user).toList(),
+          controller, userConnections);
+      timers.add(Timer.periodic(const Duration(seconds: 5), (timer) {
+        addTestUsers(userConnections.values.map((uc) => uc.user).toList(),
+            controller, userConnections);
+      }));
+    } else {
+      Timer(const Duration(seconds: 0), () {
+        // _logger.info("Adding host user to the controller");
+        controller.add(userConnections.values.map((uc) => uc.user).toList());
+      });
     }
   }
 
   void setUpEventListeners() {
     subscriptions.add(peer.on('open').listen((conn_id) {
       _logger.info('Open: We are the host');
-      // var users = userConnections.values.map((uc) => uc.user).toList();
-      // controller.add(users);
     }));
 
     subscriptions.add(peer.on<DataConnection>('connection').listen((peerConn) {
@@ -92,8 +112,6 @@ class HostUser implements AbstractUser {
       });
 
       peerConn.on('data').listen((data) {
-        // var rawData = jsonDecode(data);
-        // var userData = User.fromJson(rawData['data']);
         var user = userConnections[peerConn.peer];
         if (user != null) {
           user.lastSeen = DateTime.now().toString();
@@ -108,14 +126,20 @@ class HostUser implements AbstractUser {
   }
 
   void setUpPeriodicTasks() {
+    void removeInactiveUsers() {
+      var now = DateTime.now();
+      userConnections.removeWhere((key, value) =>
+          now.difference(DateTime.parse(value.lastSeen)).inSeconds > 30);
+    }
+
     void task(timer) {
       if (controller.isClosed) {
         timer.cancel();
         return;
       }
-      var users = userConnections.values.map((uc) => uc.user).toList();
-      controller.add(users);
-      if (users.length > 1) {
+
+      if (userConnections.length > 1) {
+        removeInactiveUsers();
         sendLobbyList();
       }
     }
@@ -124,23 +148,6 @@ class HostUser implements AbstractUser {
       task(timer);
     });
   }
-
-  // void removeInactiveUsers() {
-  //   var now = DateTime.now();
-  //   connectedUsers.removeWhere((user) {
-  //     var lastSeen = DateTime.parse(user.lastSeen);
-  //     if (user.isHost) return false;
-  //     var isInactive = now.difference(lastSeen).inSeconds > 5;
-  //     if (isInactive && game.isStarted) {
-  //       game.endGame();
-  //     }
-  //     return isInactive;
-  //   });
-
-  //   if (!controller.isClosed) {
-  //     controller.add(List.from(connectedUsers));
-  //   }
-  // }
 
   void sendLobbyList() {
     var payload = {
@@ -165,10 +172,16 @@ class HostUser implements AbstractUser {
 
   @override
   void startGame() {
+    if (userConnections.length < game.minPlayers) {
+      _logger.info("Not enough players to start the game");
+      return;
+    }
     Map<String, GameState> userStates =
-        game.nightPhase(List.from(userConnections.keys));
+        game.nightPhase(userConnections.values.map((uc) => uc.user).toList());
+
+    // We don't broadcast the game state to everyone
+    // We only send the game state for a user to that user
     userStates.forEach((key, value) {
-      // _logger.info("$key : ${value.toJson()}");
       if (hostId == key) {
         game.updateGameState(value);
         return;
@@ -177,21 +190,22 @@ class HostUser implements AbstractUser {
         "event": "game-state",
         "data": value.toJson(),
       };
-      // TODO: check if connection is defined and open
-      // if (connectionMap[key] == null || connectionMap[key]!.open == false) {
-      // return;
-      // }
-      // connectionMap[key]!.send(jsonEncode(payload));
+
+      if (userConnections[key] == null ||
+          userConnections[key]!.connection == null) {
+        return;
+      }
+
+      userConnections[key]!.connection!.send(jsonEncode(payload));
     });
 
     game.startGame();
-    sendLobbyList();
   }
 
   void broadcastEvent(Map<String, dynamic> event) {
     var encodedEvent = jsonEncode(event);
-    for (var connection in List.from(userConnections.values)) {
-      if (connection.open == false) continue;
+    for (var connection in userConnections.values.map((uc) => uc.connection)) {
+      if (connection == null) continue;
       connection.send(encodedEvent);
     }
   }
@@ -212,13 +226,15 @@ class HostUser implements AbstractUser {
     if (!controller.isClosed) {
       controller.close();
     }
+    for (var timer in timers) {
+      timer.cancel();
+    }
   }
 }
 
 class NormalUser implements AbstractUser {
   late Peer? peer;
   late String gameCode, name, hostId, id;
-  late List<User> connectedUsers = [];
   final StreamController<List<User>> controller;
   final List<StreamSubscription> subscriptions = [];
   late Function hostDisconnectedCallback;
@@ -233,7 +249,7 @@ class NormalUser implements AbstractUser {
 
   @override
   void startGame() {
-    // do nothing
+    // do nothing, only the host does this.
   }
 
   void initializeNormalUser() {
@@ -242,29 +258,7 @@ class NormalUser implements AbstractUser {
     peer = Peer(id: peerId);
     id = peerId;
     setUpEventListeners();
-    setUpConnectionCheck();
-  }
-
-  void attemptReconnect() {
-    int retries = 0;
-    const maxRetries = 3;
-
-    Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (retries >= maxRetries) {
-        _logger.info('Reconnection failed after $maxRetries attempts');
-        hostDisconnectedCallback();
-        timer.cancel();
-        return;
-      }
-      _logger.info('Reconnection attempt ${retries + 1}');
-      hostConn = peer?.connect(hostId);
-      if (hostConn?.open == true) {
-        _logger.info('Reconnection successful');
-        sendUserJoinEvent();
-        timer.cancel();
-      }
-      retries++;
-    });
+    setUpPeriodicTasks();
   }
 
   void setUpEventListeners() {
@@ -286,7 +280,6 @@ class NormalUser implements AbstractUser {
 
       hostConn?.on('close').listen((_) {
         _logger.info('Close: Host has left the game');
-        // attemptReconnect();
         hostDisconnectedCallback();
       });
 
@@ -299,12 +292,12 @@ class NormalUser implements AbstractUser {
       hostConn?.on('data').listen((data) {
         var payload = jsonDecode(data);
         if (payload['event'] == 'lobby-list') {
+          _logger.info('Lobby list received');
           var users = List<User>.from(
               payload['data']['users'].map((user) => User.fromJson(user)));
-          connectedUsers.clear();
-          connectedUsers.addAll(users);
+
           if (!controller.isClosed) {
-            controller.add(List.from(connectedUsers));
+            controller.add(List.from(users));
           }
         }
         if (payload['event'] == 'end-game') {
@@ -318,7 +311,7 @@ class NormalUser implements AbstractUser {
     }));
   }
 
-  void setUpConnectionCheck() {
+  void setUpPeriodicTasks() {
     const int maxRetries = 3; // Number of retries
     const int delayInSeconds = 3; // Delay between each retry in seconds
 
@@ -355,6 +348,28 @@ class NormalUser implements AbstractUser {
   void sendHostMessage(Map<String, dynamic> payload) {
     if (hostConn?.open == false) return;
     hostConn?.send(jsonEncode(payload));
+  }
+
+  void attemptReconnect() {
+    int retries = 0;
+    const maxRetries = 3;
+
+    Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (retries >= maxRetries) {
+        _logger.info('Reconnection failed after $maxRetries attempts');
+        hostDisconnectedCallback();
+        timer.cancel();
+        return;
+      }
+      _logger.info('Reconnection attempt ${retries + 1}');
+      hostConn = peer?.connect(hostId);
+      if (hostConn?.open == true) {
+        _logger.info('Reconnection successful');
+        sendUserJoinEvent();
+        timer.cancel();
+      }
+      retries++;
+    });
   }
 
   void dispose() {
